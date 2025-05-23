@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Weapon Damage & Cost Calculator</title>
+    <script src="https://cdn.tailwindcss.com "></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css ">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins :wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        .weapon-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: #4a5568 #2d3748;
+        }
+        .weapon-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .weapon-scroll::-webkit-scrollbar-track {
+            background: #2d3748;
+            border-radius: 10px;
+        }
+        .weapon-scroll::-webkit-scrollbar-thumb {
+            background-color: #4a5568;
+            border-radius: 10px;
+        }
+        .weapon-card {
+            scroll-snap-align: start;
+            flex: 0 0 auto;
+            width: 180px;
+            transition: all 0.3s ease;
+        }
+        .weapon-card.selected {
+            border-color: #f6ad55;
+            box-shadow: 0 0 0 2px #f6ad55;
+        }
+        .rank-select {
+            background: #2d3748;
+            border: 1px solid #4a5568;
+            color: #e2e8f0;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            width: 100%;
+        }
+        .stat-input {
+            background: #2d3748;
+            border: 1px solid #4a5568;
+            color: #e2e8f0;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            width: 100%;
+        }
+        .glow-box {
+            box-shadow: 0 0 15px rgba(159, 122, 234, 0.5);
+        }
+    </style>
+</head>
+<body class="text-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
+                <i class="fas fa-dragon mr-3"></i> Weapon Damage & Cost Calculation
+            </h1>
+            <p class="text-lg text-gray-300 max-w-2xl mx-auto">
+                Calculate weapon costs, Weapon needed, and damage calculation based on your rank and stats
+            </p>
+        </header>
+        <!-- Main Calculator -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Player Info Section -->
+            <div class="bg-gray-800 bg-opacity-70 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-user-ninja mr-3 text-purple-400"></i> Player Stats
+                </h2>
+                <!-- Rank and Attack Power in one row -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <!-- Rank Selection -->
+                    <div>
+                        <label class="block text-gray-300 mb-2">Player Rank</label>
+                        <select id="rankSelect" class="rank-select">
+                            <option value="E">E</option>
+                            <option value="D">D</option>
+                            <option value="C">C</option>
+                            <option value="B">B</option>
+                            <option value="A">A</option>
+                            <option value="S">S</option>
+                            <option value="SS">SS</option>
+                            <option value="G">G</option>
+                            <option value="N">N</option>
+                            <option value="N+">N+</option>
+                            <option value="M">M</option>
+                            <option value="M+">M+</option>
+                        </select>
+                    </div>
+                    <!-- Attack Power -->
+                    <div>
+                        <label class="block text-gray-300 mb-2">Palyer Weapon Stats</label>
+                        <input type="number" min="0" max="150" placeholder="0 - 150" class="stat-input" id="attackPower">
+                    </div>
+                    <!-- Guild Attack Bonus -->
+                    <div>
+                        <label class="block text-gray-300 mb-2">Guild Weapon Level</label>
+                        <input type="number" min="0" max="100" placeholder="0 - 100" class="stat-input" id="guildLevel">
+                    </div>
+                </div>
+                <!-- Current Rank Display -->
+                <div class="mt-8 p-4 rounded-lg bg-gray-900 bg-opacity-50 border border-gray-700">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold mr-4 bg-gradient-to-br from-gray-400 to-gray-600 text-gray-800">E</div>
+                        <div>
+                            <h3 class="font-medium">Current Rank: <span id="rankText" class="font-bold">E</span></h3>
+                            <p class="text-sm text-gray-400">Rank multiplier: <span id="multiplierText" class="font-medium">1.0x</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Weapon Selection -->
+            <div class="bg-gray-800 bg-opacity-70 rounded-xl p-6 border border-gray-700">
+                <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-khanda mr-3 text-yellow-400"></i> Weapon Selection
+                </h2>
+                <!-- Weapon Scroller -->
+                <div class="weapon-scroll mb-6">
+                    <!-- Dragon City Weapon -->
+                    <div class="weapon-card bg-gray-900 bg-opacity-70 p-4 rounded-lg border border-gray-700 cursor-pointer selected" onclick="selectWeapon('dragon')">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-dragon text-3xl text-red-500 mb-2"></i>
+                            <h3 class="font-medium text-center">Dragon City</h3>
+                            <p class="text-xs text-gray-400 text-center">Cost: 86.58 Qa</p>
+                            <p class="text-xs text-gray-400 text-center">DMG: 311.30T</p>
+                        </div>
+                    </div>
+                    <!-- XZ City Weapon -->
+                    <div class="weapon-card bg-gray-900 bg-opacity-70 p-4 rounded-lg border border-gray-700 cursor-pointer" onclick="selectWeapon('xz')">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-hand-fist text-3xl text-cyan-400 mb-2"></i>
+                            <h3 class="font-medium text-center">XZ City</h3>
+                            <p class="text-xs text-gray-400 text-center">Cost: 5.20 Qi</p>
+                            <p class="text-xs text-gray-400 text-center">DMG: 14.75 Qa</p>
+                        </div>
+                    </div>
+                    <!-- Kindama City Weapon -->
+                    <div class="weapon-card bg-gray-900 bg-opacity-70 p-4 rounded-lg border border-gray-700 cursor-pointer" onclick="selectWeapon('kindama')">
+                        <div class="flex flex-col items-center">
+                            <svg class="w-12 h-12 mb-2 text-purple-400" viewBox="0 0 100 100">
+                                <!-- UFO Body -->
+                                <path d="M10 50 A40 20 0 0 1 90 50 A40 20 0 0 1 10 50 Z" fill="currentColor"/>
+                                <!-- UFO Dome -->
+                                <path d="M30 50 A20 15 0 0 1 70 50 L70 30 A20 15 0 0 0 30 30 Z" fill="currentColor"/>
+                                <!-- Antenna -->
+                                <rect x="48" y="15" width="4" height="15" fill="currentColor"/>
+                                <circle cx="50" cy="15" r="4" fill="currentColor"/>
+                            </svg>
+                            <h3 class="font-medium text-center">Kindama City</h3>
+                            <p class="text-xs text-gray-400 text-center">Cost: 422.50 Qi</p>
+                            <p class="text-xs text-gray-400 text-center">DMG: 258.34 Qa</p>
+                        </div>
+                    </div>
+                    <!-- Huntes City Weapon (Archmage's Staff) -->
+                    <div class="weapon-card bg-gray-900 bg-opacity-70 p-4 rounded-lg border border-gray-700 cursor-pointer" onclick="selectWeapon('huntes')">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-crown text-3xl text-yellow-400 mb-2"></i>
+                            <h3 class="font-medium text-center">Huntes City</h3>
+                            <p class="text-xs text-gray-400 text-center">ARCHMAGE'S STAFF</p>
+                            <p class="text-xs text-gray-400 text-center">Cost: 30.42 Sx</p>
+                            <p class="text-xs text-gray-400 text-center">DMG: 4.39 Qi</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Weapon Rank Selection -->
+                <div class="mb-6">
+                    <label class="block text-gray-300 mb-3">Weapon Rank</label>
+                    <select id="weaponRankSelect" class="rank-select">
+                        <option value="E">E Rank (+0%)</option>
+                        <option value="D">D Rank (+90%)</option>
+                        <option value="C">C Rank (+261%)</option>
+                        <option value="B">B Rank (+396%)</option>
+                        <option value="A">A Rank (+642%)</option>
+                        <option value="S">S Rank (+1120%)</option>
+                        <option value="SS">SS Rank (+2028%)</option>
+                    </select>
+                </div>
+                <!-- Enchantment Selection -->
+                <div class="mb-6">
+                    <label class="block text-gray-300 mb-3">Sharpness Level (1-8)</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button onclick="selectEnchantLevel(1)" class="enchant-btn bg-blue-900 bg-opacity-50 hover:bg-opacity-70 text-blue-200 py-2 px-3 rounded-lg text-sm">I</button>
+                        <button onclick="selectEnchantLevel(2)" class="enchant-btn bg-blue-800 bg-opacity-50 hover:bg-opacity-70 text-blue-200 py-2 px-3 rounded-lg text-sm">II</button>
+                        <button onclick="selectEnchantLevel(3)" class="enchant-btn bg-blue-700 bg-opacity-50 hover:bg-opacity-70 text-blue-200 py-2 px-3 rounded-lg text-sm">III</button>
+                        <button onclick="selectEnchantLevel(4)" class="enchant-btn bg-blue-600 bg-opacity-50 hover:bg-opacity-70 text-blue-200 py-2 px-3 rounded-lg text-sm">IV</button>
+                        <button onclick="selectEnchantLevel(5)" class="enchant-btn bg-blue-500 bg-opacity-50 hover:bg-opacity-70 text-blue-200 py-2 px-3 rounded-lg text-sm">V</button>
+                        <button onclick="selectEnchantLevel(6)" class="enchant-btn bg-blue-400 bg-opacity-50 hover:bg-opacity-70 text-blue-200 py-2 px-3 rounded-lg text-sm">VI</button>
+                        <button onclick="selectEnchantLevel(7)" class="enchant-btn bg-blue-300 bg-opacity-50 hover:bg-opacity-70 text-blue-200 py-2 px-3 rounded-lg text-sm">VII</button>
+                        <button onclick="selectEnchantLevel(8)" class="enchant-btn bg-blue-200 bg-opacity-50 hover:bg-opacity-70 text-blue-200 py-2 px-3 rounded-lg text-sm">VIII</button>
+                    </div>
+                </div>
+                <!-- Current Weapon Display -->
+                <div class="mt-6 p-4 rounded-lg bg-gray-900 bg-opacity-50 border border-gray-700">
+                    <div class="flex items-center">
+                        <i id="weaponIcon" class="fas fa-dragon text-3xl text-red-500 mr-4"></i>
+                        <div>
+                            <h3 class="font-medium">Selected: <span id="weaponText" class="font-bold">Dragon City</span></h3>
+                            <p class="text-sm text-gray-400">Rank: <span id="weaponRankText" class="font-medium text-orange-300">E</span> | Enchant: <span id="enchantText" class="font-medium text-blue-300">Sharpness I</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Results Section -->
+            <div class="bg-gray-800 bg-opacity-70 rounded-xl p-6 border border-gray-700 glow-box">
+                <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                    <i class="fas fa-scroll mr-3 text-green-400"></i> Results
+                </h2>
+                <div class="space-y-6">
+                    <!-- Weapon Needed -->
+                    <div class="bg-gray-900 bg-opacity-70 p-4 rounded-lg border border-gray-700">
+                        <h3 class="font-medium mb-3 flex items-center">
+                            <i class="fas fa-hammer mr-2 text-orange-500"></i> Weapon Needed
+                        </h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Rank E Staffs</span>
+                                <span class="font-medium text-green-400" id="rankEStaffs">1</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Rank D Staffs</span>
+                                <span class="font-medium text-blue-400" id="rankDStaffs">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Cost Calculation -->
+                    <div class="bg-gray-900 bg-opacity-70 p-4 rounded-lg border border-gray-700">
+                        <h3 class="font-medium mb-3 flex items-center">
+                            <i class="fas fa-coins mr-2 text-yellow-500"></i> Total Cost
+                        </h3>
+                        <div class="flex items-end">
+                            <span class="text-2xl font-bold text-yellow-400" id="totalCost">86.58 Qa</span>
+                        </div>
+                    </div>
+                    <!-- Damage Output -->
+                    <div class="bg-gray-900 bg-opacity-70 p-4 rounded-lg border border-gray-700">
+                        <h3 class="font-medium mb-3 flex items-center">
+                            <i class="fas fa-bolt mr-2 text-red-400"></i> Damage Calculation
+                        </h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Base Weapon Damage</span>
+                                <span class="font-medium" id="baseDamage">311.30T</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Weapon Rank Bonus</span>
+                                <span class="font-medium text-orange-400" id="weaponRankBonus">+0%</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Enchantment Bonus</span>
+                                <span class="font-medium text-blue-400" id="enchantBonus">+33%</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Player Rank Bonus</span>
+                                <span class="font-medium text-purple-400" id="playerRankBonus">+0%</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Stat Bonus</span>
+                                <span class="font-medium text-green-400" id="statBonus">+56.25%</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-300">Guild Bonus</span>
+                                <span class="font-medium text-cyan-400" id="guildBonus">+2.5%</span>
+                            </div>
+                            <div class="pt-2 border-t border-gray-700">
+                                <div class="flex justify-between text-base">
+                                    <span class="text-gray-200">Total Damage</span>
+                                    <span class="font-bold text-xl text-red-400" id="totalDamage">593.24T</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Footer -->
+        <footer class="mt-16 text-center text-gray-500 text-sm">
+            <p>© 2023 Dark Weapon Forge Calculator. Calculations based on game data.</p>
+            <p class="mt-1">Created with <i class="fas fa-skull text-gray-400"></i> for dark RPG enthusiasts</p>
+        </footer>
+    </div>
+    <script>
+        // Current selections
+        let currentPlayerRank = 'E';
+        let currentWeapon = 'dragon';
+        let currentWeaponRank = 'E';
+        let currentEnchantLevel = 1;
+
+        // Game data from data.txt
+        const weaponData = {
+            'dragon': {
+                name: 'Dragon City',
+                cost: '86.58 Qa',
+                damage: '311.30T',
+                icon: 'fa-dragon',
+                color: 'text-red-500'
+            },
+            'xz': {
+                name: 'XZ City',
+                cost: '5.20 Qi',
+                damage: '14.75 Qa',
+                icon: 'fa-hand-fist',
+                color: 'text-cyan-400'
+            },
+            'kindama': {
+                name: 'Kindama City',
+                cost: '422.50 Qi',
+                damage: '258.34 Qa',
+                icon: 'fa-rocket',
+                color: 'text-purple-400'
+            },
+            'huntes': {
+                name: 'Huntes City (Archmage\'s Staff)',
+                cost: '30.42 Sx',
+                damage: '4.39 Qi',
+                icon: 'fa-crown',
+                color: 'text-yellow-400'
+            }
+        };
+
+        // Player rank multipliers from data.txt
+        const playerRankMultipliers = {
+            'E': 1.0,
+            'D': 1.1,
+            'C': 1.2,
+            'B': 1.3,
+            'A': 1.4,
+            'S': 1.5,
+            'SS': 1.6,
+            'G': 2.0,
+            'N': 3.0,
+            'N+': 3.5,
+            'M': 5.8,
+            'M+': 7.1
+        };
+
+        // Weapon rank damage multipliers (cumulative from data.txt)
+        const weaponRankMultipliers = {
+            'E': 1.0,      // Base
+            'D': 1.9,      // +90%
+            'C': 3.61,     // +90% from D (1.9 * 1.9)
+            'B': 6.859,    // +90% from C (3.61 * 1.9)
+            'A': 13.032,   // +90% from B (6.859 * 1.9)
+            'S': 24.761,   // +90% from A (13.032 * 1.9)
+            'SS': 47.045   // +90% from S (24.761 * 1.9)
+        };
+
+        // Staff requirements from data.txt
+        const staffRequirements = {
+            'E': { rankE: 1, rankD: 0 },
+            'D': { rankE: 3, rankD: 1 },
+            'C': { rankE: 9, rankD: 3 },
+            'B': { rankE: 27, rankD: 9 },
+            'A': { rankE: 81, rankD: 27 },
+            'S': { rankE: 243, rankD: 81 },
+            'SS': { rankE: 729, rankD: 243 }
+        };
+
+        // Enchantment sharpness multipliers from data.txt (converted to percentages)
+        const enchantmentMultipliers = {
+            1: 1.33,    // 133.00%
+            2: 1.7689,  // 176.89%
+            3: 2.3526,  // 235.26%
+            4: 3.129,   // 312.90%
+            5: 4.1616,  // 416.16%
+            6: 5.5349,  // 553.49%
+            7: 7.3614,  // 736.14%
+            8: 9.7906   // 979.06%
+        };
+
+        // Initialize the calculator
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up player rank dropdown
+            document.getElementById('rankSelect').addEventListener('change', function() {
+                currentPlayerRank = this.value;
+                updateRankDisplay();
+                calculateAll();
+            });
+
+            // Set up weapon rank dropdown
+            document.getElementById('weaponRankSelect').addEventListener('change', function() {
+                currentWeaponRank = this.value;
+                updateWeaponRankDisplay();
+                calculateAll();
+            });
+
+            // Set up attack power input
+            document.getElementById('attackPower').addEventListener('input', function(e) {
+                let value = parseInt(e.target.value) || 0;
+                if (value < 0) value = 0;
+                if (value > 150) value = 150;
+                e.target.value = value;
+                calculateAll();
+            });
+
+            // Set up guild level input
+            document.getElementById('guildLevel').addEventListener('input', function(e) {
+                let value = parseInt(e.target.value) || 0;
+                if (value < 0) value = 0;
+                if (value > 100) value = 100;
+                e.target.value = value;
+                calculateAll();
+            });
+
+            // Initial calculation
+            updateRankDisplay();
+            updateWeaponRankDisplay();
+            calculateAll();
+        });
+
+        function updateRankDisplay() {
+            document.getElementById('rankText').textContent = currentPlayerRank;
+            document.getElementById('multiplierText').textContent = playerRankMultipliers[currentPlayerRank] + 'x';
+        }
+
+        function updateWeaponRankDisplay() {
+            document.getElementById('weaponRankText').textContent = currentWeaponRank;
+        }
+
+        // Weapon selection
+        function selectWeapon(weapon) {
+            currentWeapon = weapon;
+            // Update weapon display
+            document.getElementById('weaponText').textContent = weaponData[weapon].name;
+            // Update weapon icon
+            const icon = document.getElementById('weaponIcon');
+            icon.className = `fas ${weaponData[weapon].icon} text-3xl ${weaponData[weapon].color} mr-4`;
+            // Update selected state in scroller
+            document.querySelectorAll('.weapon-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            calculateAll();
+        }
+
+        // Function to convert number to Roman numeral
+        function toRoman(num) {
+            const romanNumerals = [
+                { value: 8, symbol: 'VIII' },
+                { value: 7, symbol: 'VII' },
+                { value: 6, symbol: 'VI' },
+                { value: 5, symbol: 'V' },
+                { value: 4, symbol: 'IV' },
+                { value: 3, symbol: 'III' },
+                { value: 2, symbol: 'II' },
+                { value: 1, symbol: 'I' }
+            ];
+            for (let i = 0; i < romanNumerals.length; i++) {
+                if (num >= romanNumerals[i].value) {
+                    return romanNumerals[i].symbol;
+                }
+            }
+            return '';
+        }
+
+        // Enchantment level selection
+        function selectEnchantLevel(level) {
+            currentEnchantLevel = level;
+            // Update button states
+            document.querySelectorAll('.enchant-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-500', 'bg-opacity-100');
+                btn.classList.add('bg-blue-900', 'bg-opacity-50');
+            });
+            event.target.classList.remove('bg-blue-900', 'bg-opacity-50');
+            event.target.classList.add('bg-blue-500', 'bg-opacity-100');
+            document.getElementById('enchantText').textContent = `Sharpness ${toRoman(level)}`;
+            calculateAll();
+        }
+
+        // Main calculation function
+        function calculateAll() {
+            // Get inputs
+            const attackPower = parseInt(document.getElementById('attackPower').value) || 0;
+            const guildLevel = parseInt(document.getElementById('guildLevel').value) || 0;
+
+            // Get current weapon data
+            const weapon = weaponData[currentWeapon];
+
+            // Calculate staff requirements
+            const staffReq = staffRequirements[currentWeaponRank];
+            document.getElementById('rankEStaffs').textContent = staffReq.rankE;
+            document.getElementById('rankDStaffs').textContent = staffReq.rankD;
+
+            const gameUnits = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc']; // Units
+            const gameScales = [1, 1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e33]; // Corresponding scales (powers of 10)
+
+            // Calculate total cost by multiplying base cost with number of rank E staffs needed
+            const baseCostParts = weapon.cost.match(/^([\d\.]+)\s*([A-Za-z]+)?$/);
+            let baseCostValue = parseFloat(baseCostParts[1]);
+            const baseCostUnit = baseCostParts[2];
+
+            // Convert base cost to raw number
+            const baseCostUnitIndex = gameUnits.indexOf(baseCostUnit);
+            if (baseCostUnitIndex !== -1) {
+                baseCostValue *= gameScales[baseCostUnitIndex];
+            }
+
+            const totalCost = baseCostValue * staffReq.rankE;
+            const formattedTotalCost = formatNumber(totalCost);
+            document.getElementById('totalCost').textContent = `${formattedTotalCost.value} ${formattedTotalCost.unit}`;
+
+            // Extract base damage as a numeric value, converting from its unit using the defined scales
+            const baseDamageParts = weapon.damage.match(/^([\d\.]+)\s*([A-Za-z]+)?$/);
+            let baseDamageValue = parseFloat(baseDamageParts[1]);
+            const baseDamageUnit = baseDamageParts[2];
+
+            // Convert base damage to raw number
+            const baseDamageUnitIndex = gameUnits.indexOf(baseDamageUnit);
+            if (baseDamageUnitIndex !== -1) {
+                baseDamageValue *= gameScales[baseDamageUnitIndex];
+            }
+
+            // Calculate all bonuses as percentages
+            const weaponRankMultiplier = weaponRankMultipliers[currentWeaponRank];
+            const weaponRankBonusPercent = ((weaponRankMultiplier - 1) * 100).toFixed(0);
+            const enchantMultiplier = enchantmentMultipliers[currentEnchantLevel];
+            const enchantBonusPercent = ((enchantMultiplier - 1) * 100).toFixed(0);
+            const playerRankMultiplier = playerRankMultipliers[currentPlayerRank];
+            const playerRankBonusPercent = ((playerRankMultiplier - 1) * 100).toFixed(0);
+
+            // +0.75% weapon damage per stat point (from data.txt)
+            const statBonusPercent = (attackPower * 0.75).toFixed(2);
+
+            // +0.25% weapon damage per guild level (from data.txt)
+            const guildBonusPercent = (guildLevel * 0.25).toFixed(2);
+
+            // Update UI with bonus percentages
+            document.getElementById('baseDamage').textContent = weapon.damage;
+            document.getElementById('weaponRankBonus').textContent = `+${weaponRankBonusPercent}%`;
+            document.getElementById('enchantBonus').textContent = `+${enchantBonusPercent}%`;
+            document.getElementById('playerRankBonus').textContent = `+${playerRankBonusPercent}%`;
+            document.getElementById('statBonus').textContent = `+${statBonusPercent}%`;
+            document.getElementById('guildBonus').textContent = `+${guildBonusPercent}%`;
+
+            // Calculate total damage multiplier
+            // Convert percentage bonuses to multipliers (divide by 100 and add 1)
+            const statMultiplier = 1 + (attackPower * 0.0075); // 0.75% per point
+            const guildMultiplier = 1 + (guildLevel * 0.0025); // 0.25% per level
+
+            // Calculate total damage with all multipliers
+            const totalMultiplier = weaponRankMultiplier * enchantMultiplier * playerRankMultiplier * statMultiplier * guildMultiplier;
+            const totalDamage = baseDamageValue * totalMultiplier;
+
+            // For display purposes, show relative increase
+            const totalBonusPercent = ((totalMultiplier - 1) * 100).toFixed(0);
+
+            // Display total damage using the formatted value and unit
+            const formattedTotalDamage = formatNumber(totalDamage);
+            document.getElementById('totalDamage').textContent = `${formattedTotalDamage.value} ${formattedTotalDamage.unit} (+${totalBonusPercent}%)`;
+        }
+
+        // Function to format large numbers with appropriate game-specific units (Final Revision)
+        function formatNumber(num) {
+            const gameUnits = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc']; // Units
+            const gameScales = [1, 1e3, 1e6, 1e9, 1e12, 1e15, 1e18, 1e21, 1e24, 1e27, 1e30, 1e33]; // Corresponding scales (powers of 10)
+
+            // Handle zero separately
+            if (num === 0) {
+                return { value: "0.00", unit: "" };
+            }
+
+            // Determine the appropriate unit index
+            let unitIndex = 0;
+            // Find the largest scale that is less than or equal to the absolute value of the number
+            // Iterate downwards to find the largest matching scale first.
+            for (let i = gameScales.length - 1; i >= 0; i--) {
+                if (Math.abs(num) >= gameScales[i]) {
+                    unitIndex = i;
+                    break;
+                }
+            }
+
+            // Return the formatted value and unit
+            const scaledValue = num / gameScales[unitIndex];
+            return { value: scaledValue.toFixed(2), unit: gameUnits[unitIndex] };
+        }
+    </script>
+</body>
+</html>
